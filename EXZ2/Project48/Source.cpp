@@ -1,7 +1,6 @@
 #include <iostream>
 #include <vector>
 #include <string>
-#include <algorithm>
 #include <fstream>
 using namespace std;
 
@@ -34,25 +33,25 @@ public:
             cin >> choice;
 
             switch (choice) {
-            case 1:
+            case 1: 
                 addwallet();
                 break;
-            case 2:
-                deposit();
+            case 2: 
+                deposit(); 
                 break;
             case 3:
-                addexpn();
+                addexpn(); 
                 break;
-            case 4:
-                showrpts();
+            case 4: 
+                showrpts(); 
                 break;
-            case 5:
-                savetofile();
+            case 5: 
+                savetofile(); 
                 break;
-            case 0:
-                cout << "Выход из системы...\n";
+            case 0: 
+                cout << "Выход из системы...\n"; 
                 break;
-            default:
+            default: 
                 cout << "Неверный выбор. Попробуйте снова.\n";
             }
         } while (choice != 0);
@@ -62,6 +61,13 @@ private:
     vector<Wallet> wallets;
     vector<Transaction> transactions;
 
+    Wallet* findWallet(const string& name) {
+        for (size_t i = 0; i < wallets.size(); i++) {
+            if (wallets[i].name == name) return &wallets[i];
+        }
+        return nullptr;
+    }
+
     void addwallet() {
         Wallet newWallet;
         cout << "Введите название: ";
@@ -69,15 +75,16 @@ private:
         cout << "Это кредитная карта? (1 - да, 0 - нет): ";
         cin >> newWallet.isCredit;
         newWallet.balance = 0.0;
-        if (newWallet.isCredit) {
-            cout << "Введите кредитный лимит: ";
-            cin >> newWallet.creditLimit;
-        }
-        else {
-            newWallet.creditLimit = 0.0;
-        }
+        newWallet.creditLimit = newWallet.isCredit ? inputCreditLimit() : 0.0;
         wallets.push_back(newWallet);
         cout << "Добавлено!\n";
+    }
+
+    double inputCreditLimit() {
+        double limit;
+        cout << "Введите кредитный лимит: ";
+        cin >> limit;
+        return limit;
     }
 
     void deposit() {
@@ -87,9 +94,8 @@ private:
         cin >> name;
         cout << "Введите сумму: ";
         cin >> amount;
-
-        auto it = find_if(wallets.begin(), wallets.end(), [&name](const Wallet& w) { return w.name == name; });
-        if (it != wallets.end()) {
+        Wallet* it = findWallet(name);
+        if (it) {
             it->balance += amount;
             cout << "Баланс обновлен: " << it->balance << "\n";
         }
@@ -109,9 +115,8 @@ private:
         cin >> amount;
         cout << "Введите дату (ГГГГ-ММ-ДД): ";
         cin >> date;
-
-        auto it = find_if(wallets.begin(), wallets.end(), [&name](const Wallet& w) { return w.name == name; });
-        if (it != wallets.end() && (it->balance + it->creditLimit) >= amount) {
+        Wallet* it = findWallet(name);
+        if (it && (it->balance + it->creditLimit) >= amount) {
             it->balance -= amount;
             transactions.push_back({ category, amount, date });
             cout << "Трата добавлена! Баланс: " << it->balance << "\n";
@@ -121,46 +126,31 @@ private:
         }
     }
 
+    void bubbleSortTransactions(vector<Transaction>& arr) {
+        size_t n = arr.size();
+        for (size_t i = 0; i < n - 1; i++) {
+            for (size_t j = 0; j < n - i - 1; j++) {
+                if (arr[j].amount < arr[j + 1].amount) {
+                    swap(arr[j], arr[j + 1]);
+                }
+            }
+        }
+    }
+
     void showrpts() {
-        cout << "Отчеты по затратам:\n";
+        cout << "Отчеты по тратам:\n";
         for (const auto& t : transactions) {
             cout << "Дата: " << t.date << " | Категория: " << t.category << " | Сумма: " << t.amount << "\n";
         }
         showtopexpns();
-        showtopcats();
     }
 
     void showtopexpns() {
         vector<Transaction> sorted = transactions;
-        sort(sorted.begin(), sorted.end(), [](const Transaction& a, const Transaction& b) {
-            return a.amount > b.amount;
-            });
+        bubbleSortTransactions(sorted);
         cout << "\nТОП-3 трат:\n";
-        for (size_t i = 0; i < min(sorted.size(), size_t(3)); i++) {
+        for (size_t i = 0; i < (sorted.size() < 3 ? sorted.size() : 3); i++) {
             cout << sorted[i].date << " " << sorted[i].category << " " << sorted[i].amount << "\n";
-        }
-    }
-
-    void showtopcats() {
-        vector<pair<string, double>> categorySums;
-        for (const auto& t : transactions) {
-            auto it = find_if(categorySums.begin(), categorySums.end(), [&t](const pair<string, double>& p) {
-                return p.first == t.category;
-                });
-            if (it != categorySums.end()) {
-                it->second += t.amount;
-            }
-            else {
-                categorySums.push_back({ t.category, t.amount });
-            }
-        }
-
-        sort(categorySums.begin(), categorySums.end(), [](const auto& a, const auto& b) {
-            return a.second > b.second;
-            });
-        cout << "\nТОП-3 категории:\n";
-        for (size_t i = 0; i < min(categorySums.size(), size_t(3)); i++) {
-            cout << categorySums[i].first << " " << categorySums[i].second << "\n";
         }
     }
 
@@ -170,7 +160,7 @@ private:
             cout << "Ошибка сохранения в файл!\n";
             return;
         }
-        file << "Отчеты по затратам:\n";
+        file << "Отчеты по тратам:\n";
         for (const auto& t : transactions) {
             file << "Дата: " << t.date << " | Категория: " << t.category << " | Сумма: " << t.amount << "\n";
         }
