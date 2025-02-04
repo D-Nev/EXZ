@@ -61,6 +61,7 @@ private:
     vector<Wallet> wallets;
     vector<Transaction> transactions;
 
+    // Поиск кошелька по названию
     Wallet* findWallet(const string& name) {
         for (size_t i = 0; i < wallets.size(); i++) {
             if (wallets[i].name == name) return &wallets[i];
@@ -143,6 +144,8 @@ private:
             cout << "Дата: " << t.date << " | Категория: " << t.category << " | Сумма: " << t.amount << "\n";
         }
         showtopexpns();
+        showtopcategories();
+
     }
 
     void showtopexpns() {
@@ -151,6 +154,42 @@ private:
         cout << "\nТОП-3 трат:\n";
         for (size_t i = 0; i < (sorted.size() < 3 ? sorted.size() : 3); i++) {
             cout << sorted[i].date << " " << sorted[i].category << " " << sorted[i].amount << "\n";
+        }
+    }
+
+    //ТОП-3 категории
+    void showtopcategories() {
+        struct CategorySum {
+            string category;
+            double total;
+        };
+
+        vector<CategorySum> categories;
+        for (const auto& t : transactions) {
+            bool found = false;
+            for (size_t i = 0; i < categories.size(); i++) {
+                if (categories[i].category == t.category) {
+                    categories[i].total += t.amount;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                categories.push_back({ t.category, t.amount });
+            }
+        }
+
+        for (size_t i = 0; i < categories.size(); i++) {
+            for (size_t j = 0; j < categories.size() - i - 1; j++) {
+                if (categories[j].total < categories[j + 1].total) {
+                    swap(categories[j], categories[j + 1]);
+                }
+            }
+        }
+
+        cout << "\nТОП-3 категорий:\n";
+        for (size_t i = 0; i < (categories.size() < 3 ? categories.size() : 3); i++) {
+            cout << categories[i].category << " " << categories[i].total << "\n";
         }
     }
 
